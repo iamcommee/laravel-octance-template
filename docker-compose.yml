@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+
+  database:
+    container_name: database
+    image: 'mysql:8.0'
+    restart: 'no'
+    ports:
+      - '${FORWARD_DB_PORT:-9906}:3306'
+    volumes:
+      - ./mysql/database/:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      TZ: 'Asia/Bangkok'
+
+  app:
+    container_name: app
+    build: ./development/docker/
+    image: lmwn-app:latest
+    restart: 'no'
+    ports:
+        - '80:8000'
+    volumes:
+        - ./:/code/
+    environment:
+        - PHP_XDEBUG_MODE=off
+        - PHP_OPCACHE_ENABLE=0
+        - PHP_OPCACHE_MEMORY_CONSUMPTION=512
+        - PHP_OPCACHE_VALIDATE_TIMESTAMPS=1
+        - PHP_OPCACHE_REVALIDATE_FREQ=0
+        - PHP_OPCACHE_MAX_ACCELERATED_FILES=10000
+        - PHP_OPCACHE_INTERNED_STRINGS_BUFFER=8
+    command: >
+        sh -c "composer install && npm install && php artisan octane:start --watch --host=0.0.0.0 --port=8000"
+    depends_on:
+        - database
